@@ -1,50 +1,25 @@
-import tkinter as tk
-from PIL import Image, ImageTk
+import folium
 
-class MapInterface(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Map Interface")
-        
-        # Load the map image
-        self.map_image_path = "scripts/cumap.png"
-        self.map_image = Image.open(self.map_image_path)
-        self.map_image.thumbnail((800, 600))  # Resize the image if needed
-        self.tk_image = ImageTk.PhotoImage(self.map_image)
+# Create a Folium map centered around CU Boulder
+cu_boulder_map = folium.Map(location=[40.0076, -105.2659], zoom_start=15)
 
-        # Create a canvas to display the map image
-        self.canvas = tk.Canvas(self, width=self.map_image.width(), height=self.map_image.height())
-        self.canvas.pack()
-        
-        # Add the map image to the canvas
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.tk_image)
-        
-        # Bind events for moving the map
-        self.canvas.bind("<ButtonPress-1>", self.on_button_press)
-        self.canvas.bind("<B1-Motion>", self.on_move)
-        
-        # Bind events for zooming the map
-        self.canvas.bind("<MouseWheel>", self.on_mousewheel)
-        
-        self.start_x = None
-        self.start_y = None
-        
-    def on_button_press(self, event):
-        self.start_x = event.x
-        self.start_y = event.y
+# Allow users to add markers by double-clicking on the map
+folium.ClickForMarker(popup='Add a Marker').add_to(cu_boulder_map)
 
-    def on_move(self, event):
-        if self.start_x and self.start_y:
-            x_move = event.x - self.start_x
-            y_move = event.y - self.start_y
-            self.canvas.move(tk.ALL, x_move, y_move)
-            self.start_x = event.x
-            self.start_y = event.y
+# Save the map to an HTML file
+cu_boulder_map.save("cu_boulder_map.html")
 
-    def on_mousewheel(self, event):
-        scale = 1.1 if event.delta > 0 else 0.9
-        self.canvas.scale(tk.ALL, event.x, event.y, scale, scale)
+# Define a custom JavaScript callback
+callback = ('''
+            function (e) {
+                var markerId = e.target._leaflet_id;
+                removeMarker(markerId);
+            }
+            ''')
 
+# Add the JavaScript callback to the map
+#folium.map.Marker([40.0076, -105.2659], popup='Remove this marker by double-clicking').add_to(cu_boulder_map)
+cu_boulder_map.get_root().add_child(folium.Element(callback))
 
-MapInterface().mainloop()
-
+# Save the map again with the added JavaScript callback
+cu_boulder_map.save("cu_boulder_map.html")
